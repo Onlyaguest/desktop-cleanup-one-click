@@ -1,0 +1,97 @@
+name: Build and release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build universal macOS app
+        run: |
+          chmod +x scripts/build-macos.sh
+          ./scripts/build-macos.sh
+      - name: Test macOS build with a temporary desktop
+        run: |
+          test_desktop="$(mktemp -d)"
+          printf 'hello\n' > "$test_desktop/记录.txt"
+          printf 'image\n' > "$test_desktop/照片.png"
+          build/macos/一键整理桌面文件.app/Contents/MacOS/DesktopCleanup \
+            --desktop "$test_desktop" --headless
+          test "$(find "$test_desktop/归档/按周归档" -type f | wc -l | tr -d ' ')" = "2"
+          test "$(find "$test_desktop/归档/图片归档" -type f | wc -l | tr -d ' ')" = "1"
+          test "$(find "$test_desktop/归档/文档归档" -type f | wc -l | tr -d ' ')" = "1"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: build/macos/一键整理桌面文件-macOS-universal.zip
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        runtime: [win-x64, win-arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish a single-file Windows app
+        shell: pwsh
+        run: |
+          dotnet publish windows/DesktopCleanup/DesktopCleanup.csproj `
+            -c Release -r ${{ matrix.runtime }} --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -o publish/${{ matrix.runtime }}
+      - name: Test Windows x64 build with a temporary desktop
+        if: matrix.runtime == 'win-x64'
+        shell: pwsh
+        run: |
+          $testDesktop = Join-Path $env:RUNNER_TEMP "desktop-cleanup-test"
+          New-Item -ItemType Directory -Force -Path $testDesktop | Out-Null
+          Set-Content -Path (Join-Path $testDesktop "记录.txt") -Value "hello"
+          Set-Content -Path (Join-Path $testDesktop "照片.png") -Value "image"
+          & "publish/win-x64/一键整理桌面文件.exe" --desktop $testDesktop --headless
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $weekly = @(Get-ChildItem (Join-Path $testDesktop "归档/按周归档") -File -Recurse)
+          $images = @(Get-ChildItem (Join-Path $testDesktop "归档/图片归档") -File)
+          $documents = @(Get-ChildItem (Join-Path $testDesktop "归档/文档归档") -File)
+          if ($weekly.Count -ne 2 -or $images.Count -ne 1 -or $documents.Count -ne 1) { exit 9 }
+      - name: Package Windows app
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path "publish/${{ matrix.runtime }}/一键整理桌面文件.exe" `
+            -DestinationPath "一键整理桌面文件-Windows-${{ matrix.runtime }}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.runtime }}
+          path: 一键整理桌面文件-Windows-${{ matrix.runtime }}.zip
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" release-assets/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME} · 一键整理桌面文件" \
+            --generate-notes
