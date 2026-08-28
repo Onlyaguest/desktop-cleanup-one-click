@@ -14,14 +14,14 @@
 
 ### macOS
 
-1. 下载 `一键整理桌面文件-macOS-universal.zip` 并解压。
+1. 下载 `desktop-cleanup-macOS-universal.zip` 并解压。
 2. 第一次打开时，右键点击 App，选择“打开”。
 3. 如果系统询问桌面访问权限，请允许。
 4. 之后直接双击即可；也可以在 EasyInput 中选择“打开应用”，绑定这个 App。
 
 ### Windows
 
-绝大多数 Windows 电脑下载 `Windows-x64.zip`；ARM Windows 设备下载 `Windows-arm64.zip`。
+绝大多数 Windows 电脑下载 `desktop-cleanup-Windows-x64.zip`；ARM Windows 设备下载 `desktop-cleanup-Windows-arm64.zip`。
 
 1. 解压后得到 `一键整理桌面文件.exe`。
 2. 双击直接运行；也可以在 EasyInput 中用“打开应用”绑定这个 exe。

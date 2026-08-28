@@ -31,14 +31,18 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos-universal
-          path: build/macos/一键整理桌面文件-macOS-universal.zip
+          path: build/macos/desktop-cleanup-macOS-universal.zip
           if-no-files-found: error
 
   build-windows:
     runs-on: windows-latest
     strategy:
       matrix:
-        runtime: [win-x64, win-arm64]
+        include:
+          - runtime: win-x64
+            arch: x64
+          - runtime: win-arm64
+            arch: arm64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -71,11 +75,11 @@ jobs:
         run: |
           Compress-Archive `
             -Path "publish/${{ matrix.runtime }}/一键整理桌面文件.exe" `
-            -DestinationPath "一键整理桌面文件-Windows-${{ matrix.runtime }}.zip"
+            -DestinationPath "desktop-cleanup-Windows-${{ matrix.arch }}.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.runtime }}
-          path: 一键整理桌面文件-Windows-${{ matrix.runtime }}.zip
+          path: desktop-cleanup-Windows-*.zip
           if-no-files-found: error
 
   release:

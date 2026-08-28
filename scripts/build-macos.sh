@@ -30,9 +30,9 @@ chmod 755 "${APP_PATH}/Contents/MacOS/DesktopCleanup"
 codesign --force --deep --sign - "${APP_PATH}"
 codesign --verify --deep --strict --verbose=2 "${APP_PATH}"
 
-rm -f "${BUILD_DIR}/一键整理桌面文件-macOS-universal.zip"
+rm -f "${BUILD_DIR}/desktop-cleanup-macOS-universal.zip"
 ditto -c -k --sequesterRsrc --keepParent \
   "${APP_PATH}" \
-  "${BUILD_DIR}/一键整理桌面文件-macOS-universal.zip"
+  "${BUILD_DIR}/desktop-cleanup-macOS-universal.zip"
 
-echo "${BUILD_DIR}/一键整理桌面文件-macOS-universal.zip"
+echo "${BUILD_DIR}/desktop-cleanup-macOS-universal.zip"
