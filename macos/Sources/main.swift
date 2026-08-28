@@ -268,7 +268,6 @@ struct DesktopCleanupApp {
             }
             exit(2)
         }
-        defer { try? fileManager.removeItem(at: lockURL) }
 
         do {
             let (metrics, errors) = try runCleanup(options: options)
@@ -282,6 +281,7 @@ struct DesktopCleanupApp {
             } else {
                 showResult(metrics: metrics, errors: errors, dryRun: options.dryRun)
             }
+            try? fileManager.removeItem(at: lockURL)
             exit(errors.isEmpty ? 0 : 1)
         } catch {
             let message = "无法读取或整理桌面：\(error.localizedDescription)"
@@ -296,6 +296,7 @@ struct DesktopCleanupApp {
                 alert.addButton(withTitle: "关闭")
                 alert.runModal()
             }
+            try? fileManager.removeItem(at: lockURL)
             exit(1)
         }
     }
